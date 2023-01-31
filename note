@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Store the output in a variable
+images_data=$(aws ecr describe-images --query 'imageDetails[*].{imageDigest: imageDigest, repositoryName: repositoryName, imageTags: imageTags[0]}')
+
+# Loop through the output to extract the ARN, repository name, and tag of each image
+while read -r line; do
+  repository_name=$(echo $line | jq -r '.repositoryName')
+  image_digest=$(echo $line | jq -r '.imageDigest')
+  image_tag=$(echo $line | jq -r '.imageTags')
+  image_arn="arn:aws:ecr:$(aws configure get region):$(aws sts get-caller-identity --query 'Account' --output text):repository/$repository_name:$image_tag@$image_digest"
+  echo "$repository_name, $image_tag, $image_arn"
+done <<< "$images_data"
